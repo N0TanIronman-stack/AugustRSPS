@@ -60,11 +60,32 @@ class UnlockPrayersPlugin : PluginEvent() {
                 player.message("$action all prayers: Rigour, Augury, Preserve, Chivalry, and Piety")
             }
         }
+
+        //Teleport
         on<CommandEvent> {
             where {
-                command.equals("Teleport", ignoreCase = true)
+                command.startsWith("Teleport", ignoreCase = true) || command.startsWith("TP", ignoreCase = true)
             }
             then {
+                val Args = arguments ?: emptyArray()
+
+                if (Args.isEmpty()) {
+                    player.message("Provide X and Y, and optionally Z")
+                    return@then
+                }
+
+                val X = Args.getOrNull(0)?.toIntOrNull()
+                if (X == null) {
+                    player.message("Must Provide X Coordinate")
+                    return@then
+                }
+                val Y = Args.getOrNull(1)?.toIntOrNull()
+                if (Y == null) {
+                    player.message("Must Provide Y Coordinate")
+                    return@then
+                }
+                val Z = Args.getOrNull(2)?.toIntOrNull() ?: 0
+
                 player.prepareForTeleport()
                 player.lock = LockState.FULL_WITH_DAMAGE_IMMUNITY
 
@@ -74,38 +95,33 @@ class UnlockPrayersPlugin : PluginEvent() {
                 player.animate(RSCM.NONE)
                 player.unlock()
 
-                player.moveTo(3200,3200,0)
-                player.message("You Teleport to your current location!")
+                player.moveTo(X,Y,Z)
+                player.message("You Teleport to $X ,$Y ,$Z")
             }
         }
 
+        //AddItem
         on<CommandEvent> {
             where {
-                command.startsWith("additem", ignoreCase = true)
+                command.startsWith("AddItem", ignoreCase = true) || command.startsWith("Give", ignoreCase = true)
             }
             then {
-                player.message("Usage: ::additem itemId [amount]")
-                // Split command by spaces
-                val parts = command.split(" ")
+                val Args = arguments ?: emptyArray()
 
-                if (parts.size < 2) {
-                    player.message("Usage: ::additem itemId [amount]")
+                if (Args.isEmpty()) {
+                    player.message("Provide ItemID, and optionally, Amount.")
                     return@then
                 }
 
-                // Parse item id safely
-                val itemId = parts[1].toIntOrNull()
+                val itemId = Args.getOrNull(0)?.toIntOrNull()
                 if (itemId == null) {
-                    player.message("Item ID must be a number.")
+                    player.message("Item ID must be a number. You typed: ${Args.getOrNull(0)}")
                     return@then
                 }
 
-                // Optional amount (defaults to 1)
-                val amount = if (parts.size >= 3) parts[2].toIntOrNull() ?: 1 else 1
+                val amount = Args.getOrNull(1)?.toIntOrNull() ?: 1
 
-                // Add the item
                 player.inventory.add(itemId, amount, assureFullInsertion = false)
-
                 player.message("You add $amount of item $itemId to your inventory.")
             }
         }
