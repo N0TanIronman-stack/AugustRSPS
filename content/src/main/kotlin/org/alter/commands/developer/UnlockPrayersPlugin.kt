@@ -2,9 +2,15 @@ package org.alter.commands.developer
 
 import org.alter.api.ClientScript
 import org.alter.api.ext.*
+import org.alter.game.model.LockState
+import org.alter.game.model.move.moveTo
 import org.alter.game.model.priv.Privilege
 import org.alter.game.pluginnew.PluginEvent
 import org.alter.game.pluginnew.event.impl.CommandEvent
+import org.alter.rscm.RSCM
+import org.alter.rscm.RSCM.asRSCM
+import org.alter.api.ext.message
+import org.alter.api.ext.prepareForTeleport
 
 class UnlockPrayersPlugin : PluginEvent() {
 
@@ -54,6 +60,54 @@ class UnlockPrayersPlugin : PluginEvent() {
                 player.message("$action all prayers: Rigour, Augury, Preserve, Chivalry, and Piety")
             }
         }
+        on<CommandEvent> {
+            where {
+                command.equals("Teleport", ignoreCase = true)
+            }
+            then {
+                player.prepareForTeleport()
+                player.lock = LockState.FULL_WITH_DAMAGE_IMMUNITY
+
+                player.animate("sequences.poh_smash_magic_tablet", delay = 16)
+                player.playSound("jingles.artistry".asRSCM(), volume = 1, delay = 15)
+
+                player.animate(RSCM.NONE)
+                player.unlock()
+
+                player.moveTo(3200,3200,0)
+                player.message("You Teleport to your current location!")
+            }
+        }
+
+        on<CommandEvent> {
+            where {
+                command.startsWith("additem", ignoreCase = true)
+            }
+            then {
+                player.message("Usage: ::additem itemId [amount]")
+                // Split command by spaces
+                val parts = command.split(" ")
+
+                if (parts.size < 2) {
+                    player.message("Usage: ::additem itemId [amount]")
+                    return@then
+                }
+
+                // Parse item id safely
+                val itemId = parts[1].toIntOrNull()
+                if (itemId == null) {
+                    player.message("Item ID must be a number.")
+                    return@then
+                }
+
+                // Optional amount (defaults to 1)
+                val amount = if (parts.size >= 3) parts[2].toIntOrNull() ?: 1 else 1
+
+                // Add the item
+                player.inventory.add(itemId, amount, assureFullInsertion = false)
+
+                player.message("You add $amount of item $itemId to your inventory.")
+            }
+        }
     }
 }
-
